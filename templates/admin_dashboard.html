@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Campus Find</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            color: #667eea;
+        }
+        .logout-btn {
+            background: #e53e3e;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            cursor: pointer;
+            padding: 10px;
+            background: #f7f9fc;
+            border-radius: 8px;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .card {
+            background: #f7f9fc;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            border: 1px solid #e2e8f0;
+        }
+        .card img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .delete-btn:hover {
+            background: #c53030;
+        }
+        .user-card {
+            background: #f7f9fc;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            border: 1px solid #e2e8f0;
+        }
+        .hidden {
+            display: none;
+        }
+        .clickable {
+            cursor: pointer;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .badge-admin {
+            background: #e53e3e;
+            color: white;
+        }
+        .badge-user {
+            background: #48bb78;
+            color: white;
+        }
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👑 Admin Dashboard</h1>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+
+        <!-- Reports Section -->
+        <div class="section">
+            <h2 onclick="toggleSection('reportsSection')" class="clickable">
+                📋 All Reports ({{ reports|length }}) ▼
+            </h2>
+            <div id="reportsSection">
+                {% if reports and reports|length > 0 %}
+                <div class="card-grid">
+                    {% for report in reports %}
+                    <div class="card">
+                        <button class="delete-btn" onclick="deleteItem('delete_report_id', {{ report.id }})">Delete</button>
+                        {% if report.image_path and report.image_path != '' %}
+                            <img src="{{ report.image_path }}" alt="Item">
+                        {% else %}
+                            <div style="width:80px;height:80px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;">No img</div>
+                        {% endif %}
+                        <h3>{{ report.item_name }}</h3>
+                        <p><strong>Type:</strong> {{ report.report_type|capitalize }}</p>
+                        <p><strong>Date:</strong> {{ report.report_date }}</p>
+                        <p><strong>Location:</strong> {{ report.location }}</p>
+                        <p><strong>Contact:</strong> {{ report.contact if report.contact else '-' }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-data">No reports found.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Users Section -->
+        <div class="section">
+            <h2 onclick="toggleSection('usersSection')" class="clickable">
+                👥 All Users ({{ users|length }}) ▼
+            </h2>
+            <div id="usersSection" class="hidden">
+                {% if users and users|length > 0 %}
+                <div class="card-grid">
+                    {% for user in users %}
+                    <div class="user-card">
+                        <button class="delete-btn" onclick="deleteItem('delete_user_id', {{ user.id }})">Delete</button>
+                        <h3>{{ user.full_name }}</h3>
+                        <p><strong>Username:</strong> {{ user.username }}</p>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>Faculty:</strong> {{ user.faculty }}</p>
+                        <p><strong>ID:</strong> {{ user.unique_id }}</p>
+                        <p><strong>Registered:</strong> {{ user.created_at }}</p>
+                        <span class="badge {% if user.role == 'admin' %}badge-admin{% else %}badge-user{% endif %}">
+                            {{ user.role|capitalize }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-data">No users found.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSection(sectionId) {
+            var section = document.getElementById(sectionId);
+            if (section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
+        }
+        
+        function deleteItem(type, id) {
+            if (confirm('Are you sure you want to delete this?')) {
+                var data = {};
+                data[type] = id;
+                
+                fetch('/admin_delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Delete failed. Please try again.');
+                });
+            }
+        }
+    </script>
+</body>
+</html>
